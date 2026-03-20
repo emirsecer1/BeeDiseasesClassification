@@ -4,6 +4,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
 ![Kaggle](https://img.shields.io/badge/Kaggle-Dataset-20BEFF?style=for-the-badge&logo=kaggle&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
@@ -30,12 +31,43 @@
 
 ---
 
+## 🖥️ Web Interface
+
+The project includes a **Streamlit** web application for interactive bee disease classification. Upload a bee hive image and get instant predictions from the trained deep learning models.
+
+**Features:**
+- 🔄 **Model selection** — Choose between Swin Transformer (98.74%) or EfficientNetV2-S (98.55%)
+- 📸 **Image upload** — Drag & drop or browse for bee hive images (JPG, PNG, BMP, WEBP)
+- 🎯 **Test-Time Augmentation (TTA)** — Toggle TTA for more robust predictions
+- 📊 **Detailed results** — View confidence scores and probability distribution across all 6 classes
+- 📦 **Flexible model loading** — Upload a checkpoint file or select from project directory
+
+### Run the App
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch the Streamlit app
+streamlit run app.py
+```
+
+The app will open in your browser at `http://localhost:8501`.
+
+> 💡 **Model checkpoints** are required for inference. Train the models using the notebooks in `Results/`, or download pre-trained checkpoints from Kaggle:
+> - [Swin Transformer checkpoint](https://www.kaggle.com/datasets/emirsecer/bee-swin) — `best_swin.pt`
+> - [EfficientNetV2-S checkpoint](https://www.kaggle.com/datasets/emirsecer/bee-efficientnet) — `best_effnet.pt`
+
+---
+
 ## 📁 Repository Structure
 
 ```
 BeeDiseasesClassification/
 │
 ├── README.md
+├── app.py                            # 🖥️ Streamlit web interface
+├── requirements.txt                  # Python dependencies
 │
 ├── report/
 │   └── bee_diseases_paper.tex        # IEEE-format LaTeX paper (Turkish)
@@ -197,10 +229,16 @@ cd BeeDiseasesClassification
 
 ### 2. Install dependencies
 ```bash
-pip install torch torchvision timm xgboost lightgbm catboost optuna
+pip install -r requirements.txt
 ```
 
-### 3. Run on Kaggle
+### 3. Launch the Web Interface
+```bash
+streamlit run app.py
+```
+Upload a bee hive image and select your model checkpoint to get instant disease predictions.
+
+### 4. Run on Kaggle
 Add the dataset to your Kaggle notebook:
 ```python
 # Dataset path
