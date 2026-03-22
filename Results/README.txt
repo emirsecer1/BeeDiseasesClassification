@@ -37,8 +37,11 @@ BeeDiseasesProject/
 ├── part_four/
 │   └── notebook_4_swin_transformer.ipynb        ← Swin Transformer
 │
-└── part_five/
-    └── notebook_5_final_ensemble.ipynb          ← Final Ensemble
+├── part_five/
+│   └── notebook_5_final_ensemble.ipynb          ← Final Ensemble
+│
+└── part_six/
+    └── notebook_6_kfold_cv_summary.ipynb        ← 5-Fold CV Özet (Mean ± Std)
 ```
 
 ---
@@ -60,7 +63,7 @@ Kaggle: `emirsecer/beediseasesdataset`
 
 Veri seti belirgin bir **sınıf dengesizliği** barındırmaktadır. Sağlıklı sınıfı ile Kayıp Kraliçe sınıfı arasındaki oran 116:1'e ulaşmaktadır. Bu dengesizliği gidermek amacıyla sınıf ağırlıklı kayıp fonksiyonu ve kapsamlı veri artırma teknikleri kullanılmıştır.
 
-**Değerlendirme Protokolü:** 5-katlı Stratified K-Fold çapraz doğrulama (Fold 0 üzerinden raporlama). Eğitim: 4.137 — Doğrulama: 1.035 görüntü.
+**Değerlendirme Protokolü:** 5-katlı Stratified K-Fold çapraz doğrulama. Notebook 2–5'te Fold 0 üzerinden raporlama yapılmıştır; Notebook 6'da tüm fold'ların ortalama ± standart sapma sonuçları verilmektedir. Eğitim: 4.137 — Doğrulama: 1.035 görüntü (her fold).
 
 ---
 
@@ -210,6 +213,30 @@ Her iki model için 5×TTA uygulanmış olasılık vektörleri elde edilmiş; ar
 | F1 Skoru | **%98,65** |
 
 Toplam 1.035 örnekten yalnızca **14 tanesi** (%1,35) yanlış sınıflandırılmıştır. Hataların %71,4'ü Küçük Kovan Böceği ↔ Varroa sınıfları arasında gerçekleşmiştir; bu iki sınıfın yüksek görsel benzerliği ve düşük görüntü çözünürlüğü (~73×72 piksel) bu durumu açıklamaktadır.
+
+---
+
+## 🔬 Part Six — 5-Fold Cross-Validation Özet
+
+**Dosya:** `part_six/notebook_6_kfold_cv_summary.ipynb`
+
+### Amaç
+Önceki notebook'larda yalnızca Fold 0 üzerinden raporlanan sonuçları, 5 katlı çapraz doğrulamanın tüm fold'ları için genişleterek istatistiksel güvenilirlik sağlamak. Her iki temel model (EfficientNetV2-S ve Swin Transformer) için ortalama ± standart sapma metriklerini hesaplamak.
+
+### Yöntem
+- Her fold (0–4) için model sıfırdan eğitilir (aynı hiperparametreler ve eğitim stratejisi)
+- En iyi checkpoint TTA ile değerlendirilir
+- 5 fold'un Accuracy, F1, Precision ve Recall metrikleri toplanır
+- Ortalama ve standart sapma hesaplanarak tablo ve görselleştirmeler üretilir
+
+### Teknik Detaylar
+- **Modeller:** EfficientNetV2-S + Swin Transformer (ayrı ayrı)
+- **Eğitim:** Notebook 2 ve 4 ile aynı hiperparametreler
+- **TTA:** 3 dönüşüm (orijinal, yatay çevirme, 90° döndürme)
+- **Çıktılar:** Per-fold sonuç tablosu, Mean ± Std özet tablosu, bar grafik, box-plot
+
+### Sonuç
+Bu notebook, makaleye eklenecek 5-fold CV sonuç tablosunu üretir. Sonuçlar CSV dosyaları olarak da kaydedilir.
 
 ---
 
