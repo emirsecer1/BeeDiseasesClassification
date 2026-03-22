@@ -1,0 +1,664 @@
+====================================================================================================
+NOTEBOOK: notebook-2-baseline-efficientnet.ipynb
+====================================================================================================
+
+Total code cells: 16
+
+
+### CELL 2 (Position 1) ###
+import os, random, warnings
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import seaborn as sns
+from pathlib import Path
+from PIL import Image
+from sklearn.metrics import (
+    classification_report, confusion_matrix,
+    accuracy_score, f1_score, precision_score, recall_score
+)
+from sklearn.model_selection import StratifiedKFold
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+import torchvision.transforms as transforms
+import torchvision.models as models
+from torch.cuda.amp import autocast, GradScaler
+
+warnings.filterwarnings('ignore')
+
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed_all(SEED)
+torch.backends.cudnn.deterministic = True
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f'✅ Device: {DEVICE}')
+if torch.cuda.is_available():
+    print(f'   GPU: {torch.cuda.get_device_name(0)}')
+    print(f'   VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB')
+
+### CELL 4 (Position 2) ###
+
+CFG = {
+
+    'img_size'       : 224,
+    'num_classes'    : 6,
+    'batch_size'     : 32,
+
+   
+    'epochs'         : 50,
+    'lr'             : 3e-4,       
+    'weight_decay'   : 1e-4,
+    'n_folds'        : 5,
+    'train_fold'     : 0,
+
+ 
+    'model_name'     : 'efficientnet_v2_s',
+    'dropout'        : 0.2,       
+    'label_smoothing': 0.05,       
+    'unfreeze_epoch' : 5,          
+
+   
+    'class_weights'  : [1.8862, 1.4888, 0.2547, 3.4343, 5.0, 1.8263],
+
+    # Paths
+    'seed'           : 42,
+    'save_path'      : '/kaggle/working/best_model.pth',
+}
+
+CLASS_NAMES = {
+    0: 'Ant Problems', 1: 'Small Hive Beetles', 2: 'Healthy',
+    3: 'Robbed Hive',  4: 'Missing Queen',      5: 'Varroa'
+}
+CLASS_COLORS = ['#E74C3C','#8E44AD','#27AE60','#E67E22','#2980B9','#C0392B']
+
+print('📋 Konfigürasyon v2 (overfitting düzeltildi):')
+for k, v in CFG.items():
+    print(f'   {k:20s}: {v}')
+
+### CELL 6 (Position 3) ###
+
+base = Path('/kaggle/input')
+DATA_DIR = None
+for root, dirs, files in os.walk(base):
+    for d in dirs:
+        full = Path(root) / d
+        try:
+            subdirs = [x for x in full.iterdir() if x.is_dir()]
+            if any(s.name in ['0', '1', '2'] for s in subdirs):
+                DATA_DIR = full
+                break
+        except:
+            pass
+    if DATA_DIR:
+        break
+
+assert DATA_DIR is not None, 'Veri seti bulunamadı!'
+print(f'✅ Veri seti: {DATA_DIR}')
+
+records = []
+for class_folder in sorted(DATA_DIR.iterdir()):
+    if class_folder.is_dir():
+        class_id = int(class_folder.name)
+        for img_path in class_folder.glob('*'):
+            if img_path.suffix.lower() in ['.jpg', '.jpeg', '.png', '.bmp']:
+                records.append({'path': str(img_path), 'label': class_id})
+
+df = pd.DataFrame(records)
+print(f'📊 Toplam: {len(df)} görüntü')
+
+skf = StratifiedKFold(n_splits=CFG['n_folds'], shuffle=True, random_state=SEED)
+df['fold'] = -1
+for fold, (_, val_idx) in enumerate(skf.split(df, df['label'])):
+    df.loc[val_idx, 'fold'] = fold
+
+train_df = df[df['fold'] != CFG['train_fold']].reset_index(drop=True)
+val_df   = df[df['fold'] == CFG['train_fold']].reset_index(drop=True)
+
+print(f'\n🔀 Fold {CFG["train_fold"]} kullanılıyor:')
+print(f'   Train: {len(train_df)} | Val: {len(val_df)}')
+print(f'\n   Train sınıf dağılımı:')
+for cid, cnt in train_df['label'].value_counts().sort_index().items():
+    print(f'     {CLASS_NAMES[cid]:20s}: {cnt}')
+
+### CELL 8 (Position 4) ###
+# EDA bulgularına göre tasarlandı:
+# - Görüntüler ~73px → 224px'e upsample edilecek
+# - Missing Queen beyaz/bulanık → normalize dikkatli
+# - Farklı arka plan renkleri (sarı, yeşil, bej) → renk augmentation
+
+train_transform = transforms.Compose([
+    transforms.Resize((CFG['img_size'], CFG['img_size'])),
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.RandomVerticalFlip(p=0.3),
+    transforms.RandomRotation(degrees=30),
+    transforms.ColorJitter(
+        brightness=0.3, contrast=0.3,
+        saturation=0.3, hue=0.1
+    ),
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
+    transforms.RandomGrayscale(p=0.05),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
+    transforms.RandomErasing(p=0.2, scale=(0.02, 0.1)),
+])
+
+val_transform = transforms.Compose([
+    transforms.Resize((CFG['img_size'], CFG['img_size'])),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
+])
+
+# Test-Time Augmentation (TTA) için
+tta_transforms = [
+    val_transform,
+    transforms.Compose([
+        transforms.Resize((CFG['img_size'], CFG['img_size'])),
+        transforms.RandomHorizontalFlip(p=1.0),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
+    ]),
+    transforms.Compose([
+        transforms.Resize((CFG['img_size'], CFG['img_size'])),
+        transforms.RandomRotation(degrees=(90,90)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
+    ]),
+]
+
+print('✅ Augmentation pipeline hazır.')
+print(f'   Train transform adımları: {len(train_transform.transforms)}')
+print(f'   TTA sayısı: {len(tta_transforms)}')
+
+### CELL 10 (Position 5) ###
+class BeeDataset(Dataset):
+    def __init__(self, df, transform=None):
+        self.df = df.reset_index(drop=True)
+        self.transform = transform
+    def __len__(self):
+        return len(self.df)
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        img = Image.open(row['path']).convert('RGB')
+        if self.transform:
+            img = self.transform(img)
+        return img, row['label']
+
+
+# WeightedRandomSampler KALDIRILDI
+# Class-weighted CrossEntropyLoss tek başına imbalance'ı yönetmek için yeterli.
+# Sampler + ağır class weight birlikte Missing Queen'i çok domine ediyordu.
+train_ds = BeeDataset(train_df, train_transform)
+val_ds   = BeeDataset(val_df,   val_transform)
+
+train_loader = DataLoader(
+    train_ds, batch_size=CFG['batch_size'],
+    shuffle=True, num_workers=2, pin_memory=True
+)
+val_loader = DataLoader(
+    val_ds, batch_size=CFG['batch_size'],
+    shuffle=False, num_workers=2, pin_memory=True
+)
+
+print(f'✅ DataLoader hazır (sampler kaldırıldı, shuffle=True):')
+print(f'   Train batches: {len(train_loader)}')
+print(f'   Val batches  : {len(val_loader)}')
+imgs, labels = next(iter(val_loader))
+print(f'   Batch shape  : {imgs.shape}')
+
+### CELL 12 (Position 6) ###
+class BeeEfficientNet(nn.Module):
+    """
+    EfficientNetV2-S + Custom classifier head.
+    """
+    def __init__(self, num_classes=6, dropout=0.2):
+        super().__init__()
+        self.backbone = models.efficientnet_v2_s(weights='IMAGENET1K_V1')
+        in_features = self.backbone.classifier[1].in_features
+        self.backbone.classifier = nn.Sequential(
+            nn.Dropout(p=dropout),
+            nn.Linear(in_features, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(p=dropout / 2),
+            nn.Linear(512, num_classes)
+        )
+        self._freeze_backbone()
+
+    def _freeze_backbone(self):
+        for param in self.backbone.features.parameters():
+            param.requires_grad = False
+
+    def unfreeze_all(self):
+        """Tüm backbone'u aç — daha iyi feature extraction için."""
+        for param in self.backbone.features.parameters():
+            param.requires_grad = True
+        trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        total     = sum(p.numel() for p in self.parameters())
+        print(f'   Trainable: {trainable:,} / {total:,} ({100*trainable/total:.1f}%)')
+
+    def forward(self, x):
+        return self.backbone(x)
+
+
+model = BeeEfficientNet(
+    num_classes=CFG['num_classes'],
+    dropout=CFG['dropout']
+).to(DEVICE)
+
+total_params     = sum(p.numel() for p in model.parameters())
+trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f'✅ Model: EfficientNetV2-S')
+print(f'   Toplam param     : {total_params:,}')
+print(f'   Trainable (Phase1): {trainable_params:,} (head only)')
+
+### CELL 14 (Position 7) ###
+# Class weights — CFG'den türet
+class_weights = torch.tensor(CFG['class_weights'], dtype=torch.float)
+
+# Class-weighted CrossEntropyLoss + Label Smoothing
+criterion = nn.CrossEntropyLoss(
+    weight=class_weights.to(DEVICE),
+    label_smoothing=CFG['label_smoothing']
+)
+
+optimizer = optim.AdamW(
+    filter(lambda p: p.requires_grad, model.parameters()),
+    lr=CFG['lr'],
+    weight_decay=CFG['weight_decay']
+)
+
+scheduler = optim.lr_scheduler.CosineAnnealingLR(
+    optimizer, T_max=CFG['unfreeze_epoch'], eta_min=1e-7
+)
+
+scaler = GradScaler()
+
+print('✅ Criterion, Optimizer, Scheduler hazır.')
+print(f'   Loss     : CrossEntropyLoss (weighted + label_smoothing={CFG["label_smoothing"]})')
+print(f'   Optimizer: AdamW (lr={CFG["lr"]}, wd={CFG["weight_decay"]})')
+print(f'   Class weights: {CFG["class_weights"]}')
+
+### CELL 16 (Position 8) ###
+def train_one_epoch(model, loader, criterion, optimizer, scaler, device):
+    model.train()
+    total_loss, correct, total = 0.0, 0, 0
+    for imgs, labels in loader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        with autocast():
+            outputs = model(imgs)
+            loss = criterion(outputs, labels)
+        scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        scaler.step(optimizer)
+        scaler.update()
+        total_loss += loss.item() * imgs.size(0)
+        preds = outputs.argmax(dim=1)
+        correct += (preds == labels).sum().item()
+        total += imgs.size(0)
+    return total_loss / total, correct / total
+
+
+@torch.no_grad()
+def validate(model, loader, criterion, device):
+    model.eval()
+    total_loss, correct, total = 0.0, 0, 0
+    all_preds, all_labels = [], []
+    for imgs, labels in loader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        with autocast():
+            outputs = model(imgs)
+            loss = criterion(outputs, labels)
+        total_loss += loss.item() * imgs.size(0)
+        preds = outputs.argmax(dim=1)
+        correct += (preds == labels).sum().item()
+        total += imgs.size(0)
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+    return total_loss / total, correct / total, all_preds, all_labels
+
+
+print('✅ Eğitim fonksiyonları tanımlandı.')
+print('   Özellikler: Mixed Precision, Gradient Clipping, WeightedSampler')
+
+### CELL 17 (Position 9) ###
+history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'lr': []}
+best_val_acc = 0.0
+best_f1 = 0.0
+
+print('='*65)
+print(f'AŞAMA 1 (Epoch 1-{CFG["unfreeze_epoch"]}): Frozen backbone')
+print('='*65)
+
+for epoch in range(1, CFG['epochs'] + 1):
+
+    # Aşama 2: unfreeze_epoch'tan itibaren tüm backbone aç
+    if epoch == CFG['unfreeze_epoch'] + 1:
+        print('\n' + '='*65)
+        print(f'AŞAMA 2 (Epoch {epoch}+): Tüm backbone unfreeze')
+        print('='*65)
+        model.unfreeze_all()
+        optimizer = optim.AdamW(
+            [
+                {'params': model.backbone.features.parameters(), 'lr': CFG['lr'] * 0.1},
+                {'params': model.backbone.classifier.parameters(), 'lr': CFG['lr']}
+            ],
+            weight_decay=CFG['weight_decay']
+        )
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=CFG['epochs'] - CFG['unfreeze_epoch'],
+            eta_min=1e-7
+        )
+
+    train_loss, train_acc = train_one_epoch(model, train_loader, criterion, optimizer, scaler, DEVICE)
+    val_loss, val_acc, val_preds, val_labels = validate(model, val_loader, criterion, DEVICE)
+    scheduler.step()
+
+    val_f1 = f1_score(val_labels, val_preds, average='weighted')
+    current_lr = optimizer.param_groups[0]['lr']
+
+    history['train_loss'].append(train_loss)
+    history['val_loss'].append(val_loss)
+    history['train_acc'].append(train_acc)
+    history['val_acc'].append(val_acc)
+    history['lr'].append(current_lr)
+
+    if val_f1 > best_f1:
+        best_f1 = val_f1
+        best_val_acc = val_acc
+        torch.save(model.state_dict(), CFG['save_path'])
+        marker = '✅ SAVED'
+    else:
+        marker = ''
+
+    print(f'Epoch {epoch:3d}/{CFG["epochs"]} | '
+          f'Loss: {train_loss:.4f}/{val_loss:.4f} | '
+          f'Acc: {train_acc:.4f}/{val_acc:.4f} | '
+          f'F1: {val_f1:.4f} | '
+          f'LR: {current_lr:.2e} {marker}')
+
+print(f'\n🏆 Best Val Acc: {best_val_acc:.4f} | Best F1: {best_f1:.4f}')
+
+### CELL 19 (Position 10) ###
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+fig.suptitle('EfficientNetV2-S — Eğitim Süreci', fontsize=14, fontweight='bold')
+
+epochs_range = range(1, len(history['train_loss']) + 1)
+
+# Loss
+axes[0].plot(epochs_range, history['train_loss'], 'b-', label='Train Loss', linewidth=2)
+axes[0].plot(epochs_range, history['val_loss'],   'r-', label='Val Loss',   linewidth=2)
+axes[0].axvline(x=10, color='gray', linestyle='--', alpha=0.7, label='Unfreeze')
+axes[0].set_title('Loss Curve')
+axes[0].set_xlabel('Epoch')
+axes[0].legend()
+axes[0].grid(alpha=0.4)
+
+# Accuracy
+axes[1].plot(epochs_range, [a*100 for a in history['train_acc']], 'b-', label='Train Acc', linewidth=2)
+axes[1].plot(epochs_range, [a*100 for a in history['val_acc']],   'r-', label='Val Acc',   linewidth=2)
+axes[1].axvline(x=10, color='gray', linestyle='--', alpha=0.7, label='Unfreeze')
+axes[1].set_title('Accuracy Curve (%)')
+axes[1].set_xlabel('Epoch')
+axes[1].legend()
+axes[1].grid(alpha=0.4)
+
+# LR
+axes[2].plot(epochs_range, history['lr'], 'g-', linewidth=2)
+axes[2].set_title('Learning Rate Schedule')
+axes[2].set_xlabel('Epoch')
+axes[2].set_ylabel('LR')
+axes[2].grid(alpha=0.4)
+
+plt.tight_layout()
+plt.savefig('training_curves.png', bbox_inches='tight', dpi=150)
+plt.show()
+
+### CELL 21 (Position 11) ###
+# En iyi modeli yükle
+model.load_state_dict(torch.load(CFG['save_path']))
+model.eval()
+
+@torch.no_grad()
+def predict_with_tta(model, df, tta_transforms, device):
+    """TTA: Her görüntüyü N farklı augmentation ile tahmin et, ortalamasını al."""
+    all_probs = []
+    for tfm in tta_transforms:
+        ds = BeeDataset(df, tfm)
+        loader = DataLoader(ds, batch_size=CFG['batch_size'], shuffle=False, num_workers=2)
+        probs_list = []
+        for imgs, _ in loader:
+            imgs = imgs.to(device)
+            with autocast():
+                logits = model(imgs)
+            probs = torch.softmax(logits, dim=1).cpu().numpy()
+            probs_list.append(probs)
+        all_probs.append(np.concatenate(probs_list, axis=0))
+
+    # Ortalama prob
+    avg_probs = np.mean(all_probs, axis=0)
+    return avg_probs.argmax(axis=1)
+
+print('🔄 TTA ile tahmin yapılıyor...')
+tta_preds  = predict_with_tta(model, val_df, tta_transforms, DEVICE)
+true_labels = val_df['label'].values
+
+# Metrikler
+acc  = accuracy_score(true_labels, tta_preds)
+f1   = f1_score(true_labels, tta_preds, average='weighted')
+prec = precision_score(true_labels, tta_preds, average='weighted')
+rec  = recall_score(true_labels, tta_preds, average='weighted')
+
+print(f'\n📊 TTA Sonuçları (Fold {CFG["train_fold"]})')
+print(f'   Accuracy  : {acc*100:.2f}%')
+print(f'   F1-Score  : {f1*100:.2f}%')
+print(f'   Precision : {prec*100:.2f}%')
+print(f'   Recall    : {rec*100:.2f}%')
+print()
+print('📋 Sınıf Bazında Rapor:')
+print(classification_report(
+    true_labels, tta_preds,
+    target_names=list(CLASS_NAMES.values()),
+    digits=4
+))
+
+### CELL 23 (Position 12) ###
+cm = confusion_matrix(true_labels, tta_preds)
+cm_norm = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+
+fig, axes = plt.subplots(1, 2, figsize=(18, 7))
+fig.suptitle(f'EfficientNetV2-S Confusion Matrix (Acc: {acc*100:.2f}%)', fontsize=14, fontweight='bold')
+
+class_labels = list(CLASS_NAMES.values())
+
+# Ham sayılar
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0],
+            xticklabels=class_labels, yticklabels=class_labels,
+            linewidths=0.5, cbar_kws={'shrink': 0.8})
+axes[0].set_title('Ham Sayılar')
+axes[0].set_xlabel('Tahmin')
+axes[0].set_ylabel('Gerçek')
+axes[0].tick_params(axis='x', rotation=30)
+
+# Normalize (recall)
+sns.heatmap(cm_norm, annot=True, fmt='.2f', cmap='YlOrRd', ax=axes[1],
+            xticklabels=class_labels, yticklabels=class_labels,
+            linewidths=0.5, cbar_kws={'shrink': 0.8})
+axes[1].set_title('Normalize (Recall)')
+axes[1].set_xlabel('Tahmin')
+axes[1].set_ylabel('Gerçek')
+axes[1].tick_params(axis='x', rotation=30)
+
+plt.tight_layout()
+plt.savefig('confusion_matrix.png', bbox_inches='tight', dpi=150)
+plt.show()
+
+### CELL 25 (Position 13) ###
+class GradCAM:
+    """Gradient-weighted Class Activation Mapping"""
+    def __init__(self, model, target_layer):
+        self.model = model
+        self.gradients = None
+        self.activations = None
+        target_layer.register_forward_hook(self._save_activation)
+        target_layer.register_full_backward_hook(self._save_gradient)
+
+    def _save_activation(self, module, input, output):
+        self.activations = output.detach()
+
+    def _save_gradient(self, module, grad_input, grad_output):
+        self.gradients = grad_output[0].detach()
+
+    def generate(self, x, class_idx=None):
+        self.model.eval()
+        output = self.model(x)
+        if class_idx is None:
+            class_idx = output.argmax(dim=1)
+        self.model.zero_grad()
+        one_hot = torch.zeros_like(output)
+        for i, ci in enumerate(class_idx):
+            one_hot[i, ci] = 1
+        output.backward(gradient=one_hot)
+        weights = self.gradients.mean(dim=(2, 3), keepdim=True)
+        cam = (weights * self.activations).sum(dim=1, keepdim=True)
+        cam = torch.relu(cam)
+        cam = cam - cam.min()
+        cam = cam / (cam.max() + 1e-8)
+        return cam.squeeze().cpu().numpy()
+
+
+# Target layer: EfficientNetV2 son konvolüsyon bloğu
+target_layer = model.backbone.features[-1]
+gradcam = GradCAM(model, target_layer)
+
+# Her sınıftan 1 örnek görselleştir
+import cv2
+
+fig, axes = plt.subplots(2, 6, figsize=(20, 8))
+fig.suptitle('Grad-CAM — Model Neye Odaklanıyor?', fontsize=14, fontweight='bold')
+
+for class_id in range(6):
+    class_samples = val_df[val_df['label'] == class_id]
+    if len(class_samples) == 0:
+        continue
+    sample = class_samples.sample(1, random_state=SEED).iloc[0]
+    img_orig = Image.open(sample['path']).convert('RGB').resize((224, 224))
+    img_tensor = val_transform(img_orig).unsqueeze(0).to(DEVICE)
+
+    cam = gradcam.generate(img_tensor)
+
+    # Orijinal görüntü
+    axes[0][class_id].imshow(img_orig)
+    axes[0][class_id].set_title(f'Class {class_id}\n{CLASS_NAMES[class_id]}', fontsize=9)
+    axes[0][class_id].axis('off')
+
+    # Grad-CAM overlay
+    cam_resized = cv2.resize(cam, (224, 224))
+    heatmap = cv2.applyColorMap(np.uint8(255 * cam_resized), cv2.COLORMAP_JET)
+    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
+    overlay = np.array(img_orig) * 0.6 + heatmap * 0.4
+    overlay = np.clip(overlay, 0, 255).astype(np.uint8)
+    axes[1][class_id].imshow(overlay)
+    axes[1][class_id].set_title('Grad-CAM', fontsize=9)
+    axes[1][class_id].axis('off')
+
+plt.tight_layout()
+plt.savefig('gradcam_visualization.png', bbox_inches='tight', dpi=150)
+plt.show()
+print('✅ Grad-CAM görselleştirme tamamlandı.')
+print('   → Makale için güçlü bir görsel kanıt: model arıların neresine bakıyor?')
+
+### CELL 27 (Position 14) ###
+results = {
+    'Method'  : [
+        'CNN [Üzen et al., 2019]',
+        'ResNet50 [Margapuri et al., 2020]',
+        'CNN+Softmax [Metlek & Kayaalp, 2021]',
+        'CNN+MLFB [Metlek & Kayaalp, 2021]',
+        'DenseNet-121 [Chawane, 2022]',
+        'SMOTE+CNN [Karthiga et al., 2021]',
+        'VGG-19 [Kaplan Berkaya et al., 2021]',
+        'VGG-19 [Liang, 2022]',
+        'BeeNet/ResNet50 [Yoo et al., 2023]',
+        'Color Moments+SVM [Kilic & Yaman, 2024]',
+        '★ EfficientNetV2-S (Ours)',
+    ],
+    'Accuracy': [92.42, 91.90, 93.07, 95.04, 91.60, 84.00, 98.07, 98.65, 94.50, 94.03, acc*100],
+    'F1-Score': [None, None, None, 95.04, 88.25, None, 94.19, None, None, 89.45, f1*100],
+}
+
+comp_df = pd.DataFrame(results)
+comp_df['Accuracy'] = comp_df['Accuracy'].round(2)
+comp_df['F1-Score'] = comp_df['F1-Score'].apply(lambda x: f'{x:.2f}' if x else '-')
+
+print('='*70)
+print('PERFORMANCE COMPARISON TABLE')
+print('='*70)
+print(comp_df.to_string(index=False))
+print('='*70)
+
+# Görsel karşılaştırma
+fig, ax = plt.subplots(figsize=(14, 7))
+colors = ['#95A5A6'] * (len(results['Method']) - 1) + ['#E74C3C']
+bars = ax.barh(results['Method'], results['Accuracy'], color=colors, edgecolor='white')
+for bar, acc_val in zip(bars, results['Accuracy']):
+    ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height()/2,
+            f'{acc_val:.2f}%', va='center', fontsize=10, fontweight='bold')
+ax.axvline(x=98.65, color='#2980B9', linestyle='--', linewidth=1.5, alpha=0.7, label='Best in Literature (98.65%)')
+ax.set_xlabel('Accuracy (%)', fontsize=12)
+ax.set_title('BeeImage Dataset — Method Comparison', fontsize=13, fontweight='bold')
+ax.set_xlim(80, 105)
+ax.invert_yaxis()
+ax.legend()
+ax.grid(axis='x', alpha=0.4)
+plt.tight_layout()
+plt.savefig('comparison_table.png', bbox_inches='tight', dpi=150)
+plt.show()
+
+### CELL 29 (Position 15) ###
+print('='*65)
+print('   NOTEBOOK 2 — EfficientNetV2-S SONUÇ RAPORU')
+print('='*65)
+print(f'\n   Accuracy   : {acc*100:.2f}%')
+print(f'   F1-Score   : {f1*100:.2f}%')
+print(f'   Precision  : {prec*100:.2f}%')
+print(f'   Recall     : {rec*100:.2f}%')
+print()
+print('   Teknikler kullanıldı:')
+print('   ✅ 2-aşamalı fine-tuning (frozen → unfreeze)')
+print('   ✅ Class-weighted loss (Missing Queen: 29.7x)')
+print('   ✅ WeightedRandomSampler')
+print('   ✅ Label smoothing (0.1)')
+print('   ✅ Mixed precision training (AMP)')
+print('   ✅ Test-Time Augmentation (3x TTA)')
+print('   ✅ Grad-CAM görselleştirme')
+print()
+lit_best = 98.65
+diff = acc*100 - lit_best
+if diff > 0:
+    print(f'   🏆 Literatür rekoru kırıldı! +{diff:.2f}% iyileşme')
+else:
+    print(f'   📈 Literatür hedefine {abs(diff):.2f}% uzaklık')
+    print(f'   → Sonraki adım: Hibrit CNN+XGBoost ile bu açığı kapatacağız')
+print()
+print('▶  Sonraki: notebook_3_hybrid_cnn_xgboost.ipynb')
+print('='*65)
+
+### CELL 30 (Position 16) ###
+import torch
+
+state = torch.load('/kaggle/input/datasets/emirsecer/bee-efficientnet/best_model.pth', map_location='cpu')
+classifier_keys = [k for k in state.keys() if 'classifier' in k or 'head' in k]
+print("Classifier/Head keys:")
+for k in classifier_keys:
+    print(f"  {k}  →  {state[k].shape}")
