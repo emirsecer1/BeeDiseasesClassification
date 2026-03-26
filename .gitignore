@@ -12,3 +12,11 @@ __pycache__/
 venv/
 .venv/
 env/
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
