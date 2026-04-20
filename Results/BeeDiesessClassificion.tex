@@ -85,7 +85,7 @@ Bu çalışmanın temel katkıları şu şekilde özetlenebilir:
 
 Arı hastalıklarının görüntü tabanlı tespitine yönelik çalışmalar son yıllarda giderek artmaktadır. Üzen vd.\ \cite{uzen2024}, ConvMixer, VGG16 ve ResNet101 sınıflandırıcılarını ortalama değer alma ile birleştiren bir topluluk öğrenme yaklaşımıyla BeeImage veri setinde \%98,87 F1 skoru elde etmiştir. Margapuri vd.\ \cite{margapuri2020}, transfer öğrenme yöntemiyle ResNet-50 kullanarak \%91,90 başarı oranı bildirmiştir.
 
-Metlek ve Kayaalp \cite{metlek2021}, CNN tabanlı Softmax ve Çok Katmanlı Geri Besleme (MLFB) yaklaşımlarını karşılaştırmış; MLFB mimarisi \%95,04 ile üstün performans göstermiştir. Chawane vd.\ \cite{chawane2022}, DenseNet-121 modeliyle \%91,60 doğruluk elde etmiştir. Karthiga vd.\ \cite{karthiga2021} ise SMOTE veri dengeleme tekniğini CNN ile birleştirerek \%84,00 başarı oranına ulaşmıştır.
+Metlek ve Kayaalp \cite{metlek2021}, CNN tabanlı Softmax ve Çok Katmanlı Geri Beslemeli Yapay Sinir Ağı (ÇKGB-YSA) yaklaşımlarını karşılaştırmış; ÇKGB-YSA mimarisi \%94,25 ile üstün performans göstermiştir. Chawane vd.\ \cite{chawane2022}, DenseNet-121 modeliyle \%91,60 doğruluk elde etmiştir. Karthiga vd.\ \cite{karthiga2021} ise SMOTE veri dengeleme tekniğini CNN ile birleştirerek \%84,00 başarı oranına ulaşmıştır.
 
 VGG-19 mimarisine dayanan çalışmalar arasında Kaplan Berkaya vd.\ \cite{kaplan2021} \%98,07 doğruluk ve \%94,19 F1 skoru bildirmiş; Liang \cite{liang2022} ise \%98,65 ile mevcut literatür rekorunu elde etmiştir. Yoo vd.\ \cite{yoo2023} \%94,50, Kılıç ve Yaman \cite{kilic2024} ise \%94,03 doğruluk bildirmiştir. Swin Transformer gibi modern Transformer tabanlı mimarilerin bu veri setinde hiç değerlendirilmemiş olması ve heterojen ensemble stratejilerinin yeterince araştırılmamış olması bu çalışmanın temel motivasyonunu oluşturmaktadır.
 
@@ -263,8 +263,8 @@ Tablo~\ref{tab:literature} önerilen yöntemlerin karşılaştırmasını sunark
 \midrule
 CVR-TÖY \cite{uzen2024}                    &  --   & 98,87 \\
 ResNet-50 \cite{margapuri2020}             & 91,90 & --    \\
-CNN+Softmax \cite{metlek2021}              & 93,07 & --    \\
-CNN+MLFB \cite{metlek2021}                 & 95,04 & 95,04 \\
+CNN+Softmax \cite{metlek2021}              & 92,70 & --    \\
+CNN+ÇKGB-YSA \cite{metlek2021}             & 94,25 & --    \\
 DenseNet-121 \cite{chawane2022}            & 91,60 & 88,25 \\
 SMOTE+CNN \cite{karthiga2021}              & 84,00 & --    \\
 VGG-19 \cite{kaplan2021}                   & 98,07 & 94,19 \\
@@ -405,8 +405,7 @@ V.~Margapuri, S.~Namburu, and S.~A.~Karre, ``Honey bee colony and varroa mite de
 \newline \textit{Erişim linki:} \url{https://scholar.google.com/scholar?q=Honey+bee+colony+and+varroa+mite+detection+using+deep+neural+networks}
 
 \bibitem{metlek2021}
-S.~Metlek and K.~Kayaalp, ``Classification of honey bee health conditions using deep learning,'' \emph{Computers and Electronics in Agriculture}, vol.~188, p.~106338, 2021.
-\newline \textit{Erişim linki:} \url{https://doi.org/10.1016/j.compag.2021.106338}
+S.~Metlek and K.~Kayaalp, ``Arı hastalıklarının hibrit bir derin öğrenme yöntemi ile tespiti,'' \emph{Gazi Üniversitesi Mühendislik Mimarlık Fakültesi Dergisi}, cilt~36, sayı~3, ss.~1715--1732, 2021, doi: 10.17341/gazimmfd.749443.
 
 \bibitem{chawane2022}
 M.~Chawane, S.~Viriri, and M.~Gwetu, ``Bee disease identification using DenseNet-121,'' in \emph{ICAICV}, 2022, pp.~212--221.
