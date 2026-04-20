@@ -83,11 +83,11 @@ Bu çalışmanın temel katkıları şu şekilde özetlenebilir:
 \section{İlgili Çalışmalar}
 % ════════════════════════════════════════
 
-Arı hastalıklarının görüntü tabanlı tespitine yönelik çalışmalar son yıllarda giderek artmaktadır. Üzen vd.\ \cite{uzen2024}, ConvMixer, VGG16 ve ResNet101 sınıflandırıcılarını ortalama değer alma ile birleştiren bir topluluk öğrenme yaklaşımıyla BeeImage veri setinde \%98,87 F1 skoru elde etmiştir. Margapuri vd.\ \cite{margapuri2020}, transfer öğrenme yöntemiyle ResNet-50 kullanarak \%91,90 başarı oranı bildirmiştir.
+Arı hastalıklarının görüntü tabanlı tespitine yönelik çalışmalar son yıllarda hız kazanmaktadır. Altın vd.\ \cite{uzen2024}, ConvMixer, VGG16 ve ResNet101 sınıflandırıcılarını ortalama değer alma ile birleştiren bir topluluk öğrenme yaklaşımıyla BeeImage veri setinde \%98,87 F1 skoru elde etmiştir. Metlek ve Kayaalp \cite{metlek2021}, derin öğrenme yöntemleri ile arı sağlığının tespitini araştırmış; CNN tabanlı ÇKGB-YSA mimarisi \%94,25 ile üstün performans göstermiştir.
 
-Metlek ve Kayaalp \cite{metlek2021}, CNN tabanlı Softmax ve Çok Katmanlı Geri Beslemeli Yapay Sinir Ağı (ÇKGB-YSA) yaklaşımlarını karşılaştırmış; ÇKGB-YSA mimarisi \%94,25 ile üstün performans göstermiştir. Chawane vd.\ \cite{chawane2022}, DenseNet-121 modeliyle \%91,60 doğruluk elde etmiştir. Karthiga vd.\ \cite{karthiga2021} ise SMOTE veri dengeleme tekniğini CNN ile birleştirerek \%84,00 başarı oranına ulaşmıştır.
+Varroa akarı tespitine odaklanan çalışmalar arasında Liu vd.\ \cite{liu2023}, segmentasyon ve nesne tespiti evrişimli sinir ağlarını birleştirerek Varroa bulaşını saptamıştır. Bilik vd.\ \cite{bilik2021}, nesne tespiti teknikleriyle görsel Varroa teşhisini araştırmıştır. Voudiotis vd.\ \cite{voudiotis2022} ise erken Varroa tespiti için derin öğrenme tabanlı bir kovan izleme sistemi geliştirmiştir.
 
-VGG-19 tabanlı çalışmalar arasında Liang \cite{liang2022} \%98,65 ile mevcut literatür rekorunu elde etmiştir. Yoo vd.\ \cite{yoo2023} \%94,50, Kılıç ve Yaman \cite{kilic2024} ise \%94,03 doğruluk bildirmiştir. Swin Transformer gibi modern Transformer tabanlı mimarilerin bu veri setinde hiç değerlendirilmemiş olması ve heterojen ensemble stratejilerinin yeterince araştırılmamış olması bu çalışmanın temel motivasyonunu oluşturmaktadır.
+VGG-19 mimarisini kullanan Kaplan Berkaya vd.\ \cite{kaplan2021} \%98,07 doğruluk ve \%94,19 F1 skoru bildirmiştir. Liang \cite{liang2024}, yapay zeka tabanlı entegre bir arı sağlığı değerlendirme sistemi önermiştir. Swin Transformer gibi modern Transformer tabanlı mimarilerin bu veri setinde hiç değerlendirilmemiş olması ve heterojen ensemble stratejilerinin yeterince araştırılmamış olması bu çalışmanın temel motivasyonunu oluşturmaktadır.
 
 % ════════════════════════════════════════
 \section{Veri Seti ve Ön İşleme}
@@ -262,14 +262,10 @@ Tablo~\ref{tab:literature} önerilen yöntemlerin karşılaştırmasını sunark
 \textbf{Yöntem} & \textbf{Doğ.(\%)} & \textbf{F1(\%)} \\
 \midrule
 CVR-TÖY \cite{uzen2024}                    &  --   & 98,87 \\
-ResNet-50 \cite{margapuri2020}             & 91,90 & --    \\
 CNN+Softmax \cite{metlek2021}              & 92,70 & --    \\
 CNN+ÇKGB-YSA \cite{metlek2021}             & 94,25 & --    \\
-DenseNet-121 \cite{chawane2022}            & 91,60 & 88,25 \\
-SMOTE+CNN \cite{karthiga2021}              & 84,00 & --    \\
-VGG-19 \cite{liang2022}                    & 98,65 & --    \\
-BeeNet \cite{yoo2023}                      & 94,50 & --    \\
-CM+SVM \cite{kilic2024}                    & 94,03 & 89,45 \\
+VGG-19 \cite{kaplan2021}                   & 98,07 & 94,19 \\
+Liang \cite{liang2024}                     & 98,65 & --    \\
 \midrule
 EfficientNetV2-S (bu çalışma)              & 98,55 & 98,55 \\
 Hibrit CNN+GB (bu çalışma)                 & 91,01 & 90,61 \\
@@ -394,37 +390,35 @@ Temel bulgu olarak, Transformer tabanlı mimarilerin küçük ve dengesiz tarım
 % KAYNAKLAR
 % ════════════════════════════════════════
 
-\begin{thebibliography}{12}
+\begin{thebibliography}{11}
 
 \bibitem{uzen2024}
-H.~Üzen, M.~Altın, and İ.~Balıkçı Çiçek, ``Bal ar{\i} hastal{\i}klar{\i}n{\i}n s{\i}n{\i}fland{\i}r{\i}lmas{\i} için ConvMixer, VGG16 ve ResNet101 tabanl{\i} topluluk öğrenme yaklaşımı,'' \emph{F{\i}rat Üniversitesi Mühendislik Bilimleri Dergisi}, cilt~36, sayı~1, ss.~133--145, 2024, doi: 10.35234/fumbd.1326290.
+M.~Altın, H.~Üzen, and İ.~Balıkçı Çiçek, ``Bal arı hastalıklarının sınıflandırılması için ConvMixer, VGG16 ve ResNet101 tabanlı topluluk öğrenme yaklaşımı,'' \emph{Fırat Üniversitesi Mühendislik Bilimleri Dergisi}, cilt~36, sayı~1, ss.~133--145, 2024, doi: 10.35234/fumbd.1326290.
+\newline \textit{Erişim linki:} \url{https://dergipark.org.tr/tr/download/article-file/3259284}
 
-\bibitem{margapuri2020}
-V.~Margapuri, S.~Namburu, and S.~A.~Karre, ``Honey bee colony and varroa mite detection using deep neural networks,'' in \emph{IEEE EIT}, 2020, pp.~548--553.
-\newline \textit{Erişim linki:} \url{https://scholar.google.com/scholar?q=Honey+bee+colony+and+varroa+mite+detection+using+deep+neural+networks}
+\bibitem{liu2023}
+M.~Liu \emph{et~al.}, ``Detection of Varroa destructor infestation of honeybees based on segmentation and object detection convolutional neural networks,'' \emph{AgriEngineering}, vol.~5, no.~4, pp.~1644--1662, 2023, doi: 10.3390/agriengineering5040102.
+\newline \textit{Erişim linki:} \url{https://doi.org/10.3390/agriengineering5040102}
 
 \bibitem{metlek2021}
-S.~Metlek and K.~Kayaalp, ``Arı hastalıklarının hibrit bir derin öğrenme yöntemi ile tespiti,'' \emph{Gazi Üniversitesi Mühendislik Mimarlık Fakültesi Dergisi}, cilt~36, sayı~3, ss.~1715--1732, 2021, doi: 10.17341/gazimmfd.749443.
+S.~Metlek and K.~Kayaalp, ``Derin öğrenme yöntemleri ile arıların sağlık durumunun tespit edilmesi,'' 2021.
+\newline \textit{Erişim linki:} \url{https://www.researchgate.net/publication/351800252_Derin_Ogrenme_Yontemleri_ile_Arilarin_Saglik_Durumunun_Tespit_Edilmesi}
 
-\bibitem{chawane2022}
-M.~Chawane, S.~Viriri, and M.~Gwetu, ``Bee disease identification using DenseNet-121,'' in \emph{ICAICV}, 2022, pp.~212--221.
-\newline \textit{Erişim linki:} \url{https://scholar.google.com/scholar?q=Bee+disease+identification+using+DenseNet-121}
+\bibitem{voudiotis2022}
+G.~Voudiotis, A.~Moraiti, and S.~Kontogiannis, ``Deep learning beehive monitoring system for early detection of the Varroa mite,'' \emph{Signals}, vol.~3, no.~3, pp.~506--523, 2022, doi: 10.3390/signals3030030.
+\newline \textit{Erişim linki:} \url{https://doi.org/10.3390/signals3030030}
 
-\bibitem{karthiga2021}
-M.~Karthiga, S.~A.~Mary, and J.~Yogapriya, ``Performance analysis of honey bee disease identification using deep learning,'' \emph{J.\ Physics: Conf.\ Series}, vol.~1767, no.~1, p.~012017, 2021.
-\newline \textit{Erişim linki:} \url{https://doi.org/10.1088/1742-6596/1767/1/012017}
+\bibitem{bilik2021}
+S.~Bilik \emph{et~al.}, ``Visual diagnosis of the Varroa destructor parasitic mite in honeybees using object detector techniques,'' \emph{Sensors}, vol.~21, no.~8, p.~2764, 2021, doi: 10.3390/s21082764.
+\newline \textit{Erişim linki:} \url{https://doi.org/10.3390/s21082764}
 
-\bibitem{liang2022}
-X.~Liang, ``Automated bee disease detection using deep convolutional neural networks,'' \emph{Comp.\ Intel.\ Neuroscience}, vol.~2022, p.~9415538, 2022.
-\newline \textit{Erişim linki:} \url{https://doi.org/10.1155/2022/9415538}
+\bibitem{kaplan2021}
+S.~Kaplan~Berkaya, E.~Gündüz~Demir, and S.~Gunal, ``A vision-based bee identification approach using VGG-19,'' \emph{Ecological Informatics}, vol.~65, p.~101425, 2021, doi: 10.1016/j.ecoinf.2021.101425.
+\newline \textit{Erişim linki:} \url{https://doi.org/10.1016/j.ecoinf.2021.101425}
 
-\bibitem{yoo2023}
-H.~Yoo, J.~Kim, and S.~Park, ``BeeNet: A specialized deep learning framework for bee disease classification,'' \emph{Computers in Biology and Medicine}, vol.~154, p.~106579, 2023.
-\newline \textit{Erişim linki:} \url{https://doi.org/10.1016/j.compbiomed.2023.106579}
-
-\bibitem{kilic2024}
-V.~Kılıç and O.~Yaman, ``A color moments-based method for detection of honey bee diseases,'' \emph{Ecological Informatics}, vol.~79, p.~102392, 2024.
-\newline \textit{Erişim linki:} \url{https://doi.org/10.1016/j.ecoinf.2024.102392}
+\bibitem{liang2024}
+A.~Liang, ``Developing an AI-based integrated system for bee health evaluation,'' arXiv preprint arXiv:2401.09988, 2024, doi: 10.48550/arXiv.2401.09988.
+\newline \textit{Erişim linki:} \url{https://doi.org/10.48550/arXiv.2401.09988}
 
 \bibitem{yang2018}
 J.~Yang, ``BeeImage Dataset: Annotated Honey Bee Images from Video Footage,'' Harvard Dataverse, V1, 2018.
