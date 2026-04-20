@@ -83,7 +83,7 @@ Bu çalışmanın temel katkıları şu şekilde özetlenebilir:
 \section{İlgili Çalışmalar}
 % ════════════════════════════════════════
 
-Arı hastalıklarının görüntü tabanlı tespitine yönelik çalışmalar son yıllarda giderek artmaktadır. Üzen vd.\ \cite{uzen2019}, özel tasarlanmış bir CNN mimarisiyle BeeImage veri setinde \%92,42 doğruluk elde etmiştir. Margapuri vd.\ \cite{margapuri2020}, transfer öğrenme yöntemiyle ResNet-50 kullanarak \%91,90 başarı oranı bildirmiştir.
+Arı hastalıklarının görüntü tabanlı tespitine yönelik çalışmalar son yıllarda giderek artmaktadır. Üzen vd.\ \cite{uzen2024}, ConvMixer, VGG16 ve ResNet101 sınıflandırıcılarını ortalama değer alma ile birleştiren bir topluluk öğrenme yaklaşımıyla BeeImage veri setinde \%98,87 F1 skoru elde etmiştir. Margapuri vd.\ \cite{margapuri2020}, transfer öğrenme yöntemiyle ResNet-50 kullanarak \%91,90 başarı oranı bildirmiştir.
 
 Metlek ve Kayaalp \cite{metlek2021}, CNN tabanlı Softmax ve Çok Katmanlı Geri Besleme (MLFB) yaklaşımlarını karşılaştırmış; MLFB mimarisi \%95,04 ile üstün performans göstermiştir. Chawane vd.\ \cite{chawane2022}, DenseNet-121 modeliyle \%91,60 doğruluk elde etmiştir. Karthiga vd.\ \cite{karthiga2021} ise SMOTE veri dengeleme tekniğini CNN ile birleştirerek \%84,00 başarı oranına ulaşmıştır.
 
@@ -261,7 +261,7 @@ Tablo~\ref{tab:literature} önerilen yöntemlerin karşılaştırmasını sunark
 \toprule
 \textbf{Yöntem} & \textbf{Doğ.(\%)} & \textbf{F1(\%)} \\
 \midrule
-CNN \cite{uzen2019}                        & 92,42 & --    \\
+CVR-TÖY \cite{uzen2024}                    &  --   & 98,87 \\
 ResNet-50 \cite{margapuri2020}             & 91,90 & --    \\
 CNN+Softmax \cite{metlek2021}              & 93,07 & --    \\
 CNN+MLFB \cite{metlek2021}                 & 95,04 & 95,04 \\
@@ -397,9 +397,8 @@ Temel bulgu olarak, Transformer tabanlı mimarilerin küçük ve dengesiz tarım
 
 \begin{thebibliography}{13}
 
-\bibitem{uzen2019}
-H.~Üzen, İ.~Türkoğlu, and F.~Ata, ``Honey bee diseases and pests diagnosis system using deep learning,'' in \emph{Int.\ Conf.\ Intelligent Systems}, 2019, pp.~47--52.
-\newline \textit{Erişim linki:} \url{https://scholar.google.com/scholar?q=Honey+bee+diseases+and+pests+diagnosis+system+using+deep+learning}
+\bibitem{uzen2024}
+H.~Üzen, M.~Altın, and İ.~Balıkçı Çiçek, ``Bal ar{\i} hastal{\i}klar{\i}n{\i}n s{\i}n{\i}fland{\i}r{\i}lmas{\i} için ConvMixer, VGG16 ve ResNet101 tabanl{\i} topluluk öğrenme yaklaşımı,'' \emph{F{\i}rat Üniversitesi Mühendislik Bilimleri Dergisi}, cilt~36, sayı~1, ss.~133--145, 2024, doi: 10.35234/fumbd.1326290.
 
 \bibitem{margapuri2020}
 V.~Margapuri, S.~Namburu, and S.~A.~Karre, ``Honey bee colony and varroa mite detection using deep neural networks,'' in \emph{IEEE EIT}, 2020, pp.~548--553.
