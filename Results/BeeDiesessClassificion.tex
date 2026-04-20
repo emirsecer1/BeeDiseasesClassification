@@ -87,7 +87,7 @@ Arı hastalıklarının görüntü tabanlı tespitine yönelik çalışmalar son
 
 Metlek ve Kayaalp \cite{metlek2021}, CNN tabanlı Softmax ve Çok Katmanlı Geri Beslemeli Yapay Sinir Ağı (ÇKGB-YSA) yaklaşımlarını karşılaştırmış; ÇKGB-YSA mimarisi \%94,25 ile üstün performans göstermiştir. Chawane vd.\ \cite{chawane2022}, DenseNet-121 modeliyle \%91,60 doğruluk elde etmiştir. Karthiga vd.\ \cite{karthiga2021} ise SMOTE veri dengeleme tekniğini CNN ile birleştirerek \%84,00 başarı oranına ulaşmıştır.
 
-VGG-19 mimarisine dayanan çalışmalar arasında Kaplan Berkaya vd.\ \cite{kaplan2021} \%98,07 doğruluk ve \%94,19 F1 skoru bildirmiş; Liang \cite{liang2022} ise \%98,65 ile mevcut literatür rekorunu elde etmiştir. Yoo vd.\ \cite{yoo2023} \%94,50, Kılıç ve Yaman \cite{kilic2024} ise \%94,03 doğruluk bildirmiştir. Swin Transformer gibi modern Transformer tabanlı mimarilerin bu veri setinde hiç değerlendirilmemiş olması ve heterojen ensemble stratejilerinin yeterince araştırılmamış olması bu çalışmanın temel motivasyonunu oluşturmaktadır.
+VGG-19 tabanlı çalışmalar arasında Liang \cite{liang2022} \%98,65 ile mevcut literatür rekorunu elde etmiştir. Yoo vd.\ \cite{yoo2023} \%94,50, Kılıç ve Yaman \cite{kilic2024} ise \%94,03 doğruluk bildirmiştir. Swin Transformer gibi modern Transformer tabanlı mimarilerin bu veri setinde hiç değerlendirilmemiş olması ve heterojen ensemble stratejilerinin yeterince araştırılmamış olması bu çalışmanın temel motivasyonunu oluşturmaktadır.
 
 % ════════════════════════════════════════
 \section{Veri Seti ve Ön İşleme}
@@ -267,7 +267,6 @@ CNN+Softmax \cite{metlek2021}              & 92,70 & --    \\
 CNN+ÇKGB-YSA \cite{metlek2021}             & 94,25 & --    \\
 DenseNet-121 \cite{chawane2022}            & 91,60 & 88,25 \\
 SMOTE+CNN \cite{karthiga2021}              & 84,00 & --    \\
-VGG-19 \cite{kaplan2021}                   & 98,07 & 94,19 \\
 VGG-19 \cite{liang2022}                    & 98,65 & --    \\
 BeeNet \cite{yoo2023}                      & 94,50 & --    \\
 CM+SVM \cite{kilic2024}                    & 94,03 & 89,45 \\
@@ -395,7 +394,7 @@ Temel bulgu olarak, Transformer tabanlı mimarilerin küçük ve dengesiz tarım
 % KAYNAKLAR
 % ════════════════════════════════════════
 
-\begin{thebibliography}{13}
+\begin{thebibliography}{12}
 
 \bibitem{uzen2024}
 H.~Üzen, M.~Altın, and İ.~Balıkçı Çiçek, ``Bal ar{\i} hastal{\i}klar{\i}n{\i}n s{\i}n{\i}fland{\i}r{\i}lmas{\i} için ConvMixer, VGG16 ve ResNet101 tabanl{\i} topluluk öğrenme yaklaşımı,'' \emph{F{\i}rat Üniversitesi Mühendislik Bilimleri Dergisi}, cilt~36, sayı~1, ss.~133--145, 2024, doi: 10.35234/fumbd.1326290.
@@ -414,10 +413,6 @@ M.~Chawane, S.~Viriri, and M.~Gwetu, ``Bee disease identification using DenseNet
 \bibitem{karthiga2021}
 M.~Karthiga, S.~A.~Mary, and J.~Yogapriya, ``Performance analysis of honey bee disease identification using deep learning,'' \emph{J.\ Physics: Conf.\ Series}, vol.~1767, no.~1, p.~012017, 2021.
 \newline \textit{Erişim linki:} \url{https://doi.org/10.1088/1742-6596/1767/1/012017}
-
-\bibitem{kaplan2021}
-S.~Kaplan~Berkaya, E.~Gunduz~Demir, and S.~Gunal, ``A vision-based bee identification approach using VGG-19,'' \emph{Ecological Informatics}, vol.~65, p.~101425, 2021.
-\newline \textit{Erişim linki:} \url{https://doi.org/10.1016/j.ecoinf.2021.101425}
 
 \bibitem{liang2022}
 X.~Liang, ``Automated bee disease detection using deep convolutional neural networks,'' \emph{Comp.\ Intel.\ Neuroscience}, vol.~2022, p.~9415538, 2022.
