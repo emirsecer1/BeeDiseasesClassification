@@ -8,22 +8,20 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[shorthands=off,turkish,english]{babel}
+\usepackage[english]{babel}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{cite}
-\usepackage{hyperref}
 \usepackage{url}
 \usepackage{xcolor}
 \usepackage{float}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue,hypertexnames=false]{hyperref}
 
 \graphicspath{{figures/}}
 
 \begin{document}
-
-\selectlanguage{turkish}
 
 \title{Bal Arısı Hastalıklarının Görüntü Tabanlı Derin Öğrenme ile Sınıflandırılması: Çok Modelli Karşılaştırmalı Bir Çalışma}
 
@@ -49,7 +47,6 @@ Bal arısı hastalık tespiti, derin öğrenme, Swin Transformer, EfficientNetV2
 % ────────────────────────────────────────
 % ENGLISH ABSTRACT
 % ────────────────────────────────────────
-\selectlanguage{english}
 
 \begin{abstract}
 Honey bees (Apis mellifera) play a critical role in global agricultural ecosystems, and diseases remain among the leading causes of colony losses. This study presents a comprehensive deep learning-based image classification system for the automatic detection of six honey bee health conditions: Ant Problems, Small Hive Beetles, Healthy, Robbed Hive, Missing Queen, and Varroa mites. Three distinct approaches are systematically compared on the BeeImage dataset comprising 5,172 images: EfficientNetV2-S, Swin Transformer, and a Hybrid CNN + Gradient Boosting ensemble. Applied for the first time on this dataset, Swin Transformer achieves 98.74\% accuracy and 98.75\% F1 score, surpassing the existing literature record of 98.65\%. The heterogeneous ensemble of EfficientNetV2-S and Swin Transformer reaches 98.65\% accuracy with a weighted F1 score of 98.65\%, outperforming all prior works in terms of F1. Grad-CAM visualizations and detailed error analysis provide interpretability insights into model decision-making. Results demonstrate that Transformer-based architectures offer a strong alternative to conventional CNNs for bee health monitoring systems.
@@ -58,8 +55,6 @@ Honey bees (Apis mellifera) play a critical role in global agricultural ecosyste
 \begin{IEEEkeywords}
 Honey bee disease detection, deep learning, Swin Transformer, EfficientNetV2, image classification, BeeImage dataset, Grad-CAM
 \end{IEEEkeywords}
-
-\selectlanguage{turkish}
 
 % ════════════════════════════════════════
 \section{Giriş}
